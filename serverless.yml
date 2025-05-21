@@ -39,7 +39,7 @@ provider:
           Resource: "*"
 
 custom:
-  envfile: ${file(./config.${self:provider.stage}.yml)}
+  envfile: ${file(./env/${self:provider.stage}-env.yml)}
   pkgLocation: # plugin configuration  
     buildDir: _build
     cleanup: true
