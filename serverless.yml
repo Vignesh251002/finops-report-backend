@@ -1,0 +1,240 @@
+service: finops-serverless-backend-resources
+frameworkVersion: '3'
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'ap-south-1'}
+  environment:
+    SECRETMANAGER_ARN: ${param:SecretsmanagerArn}
+    DATABASE_SECRET_ID: ${self:custom.envfile.DATABASE_SECRET_ID} 
+  deploymentBucket:
+    name: ${param:PipelineArtifactBucket}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - iam:*
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - KMS:Decrypt
+            - KMS:Encrypt
+            - KMS:CreateKey
+            - KMS:createAlias
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - "secretsmanager:GetSecretValue"
+            - "secretsmanager:DescribeSecret"
+            - "secretsmanager:ListSecretVersionIds"
+            - "secretsmanager:ListSecrets"
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - "ses:*"
+            - "mobiletargeting:*"
+            - "sqs:SendMessage"
+          Resource: "*"
+
+custom:
+  envfile: ${file(./config.${self:provider.stage}.yml)}
+  pkgLocation: # plugin configuration  
+    buildDir: _build
+    cleanup: true
+  cors:
+      methods: "GET,OPTIONS"  # Corrected the method syntax
+      origin: '*' 
+      headers:
+        - 'Content-Type'
+        - 'X-Amz-Date'
+        - 'Authorization'
+        - 'X-Api-Key'
+        - 'X-Amz-Security-Token'
+      allowCredentials: true
+  
+
+functions:
+  LambdaAuthorizer:
+    handler: src/authorizer/index.lambda_handler
+    name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-lambda-authorizer
+    role: lambdaRole
+    layers:
+      - ${self:custom.envfile.LAYER}
+    package:
+      #artifact: ${self:custom.pkgLocation.buildDir}/${self:provider.stage}-lambda-authorizer.zip
+      patterns:
+        - '!src/**'
+        - 'src/authorizer/**'
+    environment:
+      DOMAIN: ${self:custom.envfile.DOMAIN}
+      CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
+      CLIENT_SECRET: ${self:custom.envfile.CLIENT_SECRET}
+      CONNECTION: ${self:custom.envfile.CONNECTION}
+  
+  SignupUser:
+    handler: src/usermangement/signup.handler
+    name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user-signup
+    package: 
+      patterns:
+        - '!src/**'
+        - 'src/usermangement/signup**'
+    environment:
+      DOMAIN: ${self:custom.envfile.DOMAIN}
+      CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
+      CLIENT_SECRET: ${self:custom.envfile.CLIENT_SECRET}
+      CONNECTION: ${self:custom.envfile.CONNECTION}
+      TENANT_TABLE: TENANT_MANAGEMENT
+      ROLE_TABLE: ROLE_PERMISSION
+      USER_TABLE: USER_MANAGEMENT
+    layers:
+      - ${self:custom.envfile.LAYER}  
+    timeout: 30
+    events:
+      - http:
+          path: /user/signup
+          method: post
+          cors: ${self:custom.cors}
+
+  LoginInUser:
+    handler: src/usermangement/login.handler
+    name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user-login
+    package: 
+      #artifact: ${self:custom.pkgLocation.buildDir}/${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user_login.zip
+      patterns:
+        - '!src/**'
+        - 'src/usermangement/login**'
+    environment:
+      DOMAIN: ${self:custom.envfile.DOMAIN}
+      CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
+      CLIENT_SECRET: ${self:custom.envfile.CLIENT_SECRET}
+      CONNECTION: ${self:custom.envfile.CONNECTION}
+      TENANT_TABLE: TENANT_MANAGEMENT
+      USER_TABLE: USER_MANAGEMENT
+    timeout: 30
+    layers:
+      - ${self:custom.envfile.LAYER}
+    events:
+      - http:
+          path: /user/login
+          method: post
+          cors: ${self:custom.cors}
+
+  ChangePassword:
+    handler: src/usermangement/forgotPassword.handler
+    name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user-forgot-password
+    package:
+      patterns:
+        - '!src/**'
+        - 'src/usermangement/forgotPassword**'         
+    environment:
+      DOMAIN: ${self:custom.envfile.DOMAIN}
+      CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
+      CLIENT_SECRET: ${self:custom.envfile.CLIENT_SECRET}
+      CONNECTION: ${self:custom.envfile.CONNECTION}
+      TENANT_TABLE: TENANT_MANAGEMENT
+      USER_TABLE: USER_MANAGEMENT
+      FORGET_PASSWORD_TEMPLATE: arn:aws:mobiletargeting:ap-south-1:137036865518:templates/Forget_Password/EMAIL
+      SENDER_EMAIL: shanya26@gmail.com
+    timeout: 30
+    layers:
+      - ${self:custom.envfile.LAYER}
+    events:
+      - http:
+          path: /user/passwordchange
+          method: post
+          cors: ${self:custom.cors}
+  UserProfile:
+    handler: src/usermangement/profile.getUserProfile
+    name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-get-user-profile
+    package:
+      patterns:
+        - '!src/**'
+        - 'src/usermangement/profile**'
+    environment:
+      DOMAIN: ${self:custom.envfile.DOMAIN}
+      CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
+      CLIENT_SECRET: ${self:custom.envfile.CLIENT_SECRET}
+      CONNECTION: ${self:custom.envfile.CONNECTION}
+      TENANT_TABLE: TENANT_MANAGEMENT
+      USER_TABLE: USER_MANAGEMENT
+    timeout: 30
+    layers:
+      - ${self:custom.envfile.LAYER}
+    events:
+      - http:
+          path: /user
+          method: get
+          authorizer:
+            name: LambdaAuthorizer 
+            resultTtlInSeconds: 0
+          cors: ${self:custom.cors}
+  ConfirmForgotPassword:
+    handler: src/usermangement/confirmForgetPassword.handler
+    name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user-confirm-forgot-password
+    package:
+      patterns:
+        - '!src/**'
+        - 'src/usermangement/confirmForgetPassword**'     
+    environment:
+      DOMAIN: ${self:custom.envfile.DOMAIN}
+      CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
+      CLIENT_SECRET: ${self:custom.envfile.CLIENT_SECRET}
+      CONNECTION: ${self:custom.envfile.CONNECTION}
+    timeout: 30
+    layers:
+      - ${self:custom.envfile.LAYER}
+    events:
+      - http:
+          path: /user/passwordchange/confirm
+          method: post
+          cors: ${self:custom.cors}
+package:
+  individually: true
+  patterns:
+    - '!node_modules/**'
+    - '!*.json'
+    - '!*.md'
+    - '!*.yml'
+    - "!*/**"
+    - src/**
+
+resources:
+  Resources:
+    lambdaRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: !Sub ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-lambda-role
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Action:
+                - "sts:AssumeRole"
+              Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+        Policies:
+          - PolicyName: lambda-roles
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - "logs:CreateLogGroup"
+                    - "logs:CreateLogStream"
+                    - "logs:PutLogEvents"
+                  Resource:
+                    - 'Fn::Join':
+                      - ':'
+                      -
+                        - 'arn:aws:logs'
+                        - Ref: 'AWS::Region'
+                        - Ref: 'AWS::AccountId'
+                        - 'log-group:/aws/lambda/*:*:*'
+   
+             
+plugins:
+  - serverless-deployment-bucket
+  - serverless-export-env
