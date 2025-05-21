@@ -94,7 +94,7 @@ functions:
     name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user-signup
     package: 
       patterns:
-        - src/usermangement/signup/**
+        - src/usermangement/**
     environment:
       DOMAIN: ${self:custom.envfile.DOMAIN}
       CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
@@ -116,7 +116,7 @@ functions:
     package: 
       #artifact: ${self:custom.pkgLocation.buildDir}/${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user_login.zip
       patterns:
-        - 'src/usermangement/login/**'
+        - 'src/usermangement/**'
     environment:
       DOMAIN: ${self:custom.envfile.DOMAIN}
       CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
@@ -136,7 +136,7 @@ functions:
     name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user-forgot-password
     package:
       patterns:
-        - 'src/usermangement/forgotPassword/**'         
+        - src/usermangement/**     
     environment:
       DOMAIN: ${self:custom.envfile.DOMAIN}
       CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
@@ -158,7 +158,7 @@ functions:
     name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-get-user-profile
     package:
       patterns:
-        - 'src/usermangement/profile/**'
+        - src/usermangement/**
     environment:
       DOMAIN: ${self:custom.envfile.DOMAIN}
       CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
@@ -181,8 +181,7 @@ functions:
     name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user-confirm-forgot-password
     package:
       patterns:
-        - '!src/**'
-        - 'src/usermangement/confirmForgetPassword**'     
+        - src/usermangement/**
     environment:
       DOMAIN: ${self:custom.envfile.DOMAIN}
       CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
