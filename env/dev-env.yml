@@ -7,3 +7,4 @@ DB_SCHEMA: finopsdbschema
 APPLICATION_PREFIX: finops-backend
 DATABASE_SECRET_ID: finops-db-secret
 APPLICATION_ENV: dev
+S3_BUCKET: finops-backend-backend

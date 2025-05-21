@@ -12,11 +12,8 @@ provider:
   runtime: nodejs20.x
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'ap-south-1'}
-  environment:
-    SECRETMANAGER_ARN: ${param:SecretsmanagerArn}
-    DATABASE_SECRET_ID: ${self:custom.envfile.DATABASE_SECRET_ID} 
   deploymentBucket:
-    name: ${param:PipelineArtifactBucket}
+    name: ${self:custom.envfile.S3_BUCKET}
   layers:
     - { Ref: LambdaDependenciesLambdaLayer }  
   iam:
