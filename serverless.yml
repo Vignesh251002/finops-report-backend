@@ -50,15 +50,18 @@ custom:
     buildDir: _build
     cleanup: true
   cors:
-      methods: "GET,OPTIONS"  # Corrected the method syntax
-      origin: '*' 
-      headers:
-        - 'Content-Type'
-        - 'X-Amz-Date'
-        - 'Authorization'
-        - 'X-Api-Key'
-        - 'X-Amz-Security-Token'
-      allowCredentials: true
+    methods:
+      - GET
+      - POST
+      - OPTIONS
+    origin: '*'
+    headers:
+      - 'Content-Type'
+      - 'X-Amz-Date'
+      - 'Authorization'
+      - 'X-Api-Key'
+      - 'X-Amz-Security-Token'
+    allowCredentials: true
   
 layers:
   LambdaDependencies:
@@ -104,7 +107,7 @@ functions:
     events:
       - http:
           path: /user/signup
-          method: post
+          method: POST
           cors: ${self:custom.cors}
 
   LoginInUser:
@@ -125,7 +128,7 @@ functions:
     events:
       - http:
           path: /user/login
-          method: post
+          method: POST
           cors: ${self:custom.cors}
 
   ChangePassword:
@@ -147,7 +150,7 @@ functions:
     events:
       - http:
           path: /user/passwordchange
-          method: post
+          method: POST
           cors: ${self:custom.cors}
   UserProfile:
     handler: src/usermangement/profile.getUserProfile
@@ -166,7 +169,7 @@ functions:
     events:
       - http:
           path: /user
-          method: get
+          method: GET
           authorizer:
             name: LambdaAuthorizer 
             resultTtlInSeconds: 0
@@ -187,7 +190,7 @@ functions:
     events:
       - http:
           path: /user/passwordchange/confirm
-          method: post
+          method: POST
           cors: ${self:custom.cors}
 
 package:
