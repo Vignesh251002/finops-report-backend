@@ -45,7 +45,7 @@ provider:
           Resource: "*"
 
 custom:
-  envfile: ${file(./env/${self:provider.stage}-env.yml)}
+  envfile: ${file(./env/dev-env.yml)}
   pkgLocation: # plugin configuration  
     buildDir: _build
     cleanup: true
