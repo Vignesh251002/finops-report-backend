@@ -131,7 +131,7 @@ functions:
           method: POST
           cors: ${self:custom.cors}
 
-  ChangePassword:
+  ForgotPassword:
     handler: src/usermangement/forgotPassword.handler
     name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user-forgot-password
     package:
@@ -152,8 +152,9 @@ functions:
           path: /user/passwordchange
           method: POST
           cors: ${self:custom.cors}
+
   UserProfile:
-    handler: src/usermangement/profile.getUserProfile
+    handler: src/usermangement/profile.handler
     name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-get-user-profile
     package:
       patterns:
@@ -174,6 +175,7 @@ functions:
             name: LambdaAuthorizer 
             resultTtlInSeconds: 0
           cors: ${self:custom.cors}
+
   ConfirmForgotPassword:
     handler: src/usermangement/confirmForgetPassword.handler
     name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user-confirm-forgot-password
