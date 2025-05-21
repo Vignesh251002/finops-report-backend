@@ -2,7 +2,12 @@ service: finops-serverless-backend-resources
 frameworkVersion: '3'
 provider:
   name: aws
-  runtime: nodejs18.x
+  stackTags:
+    STAGE: ${self:custom.envfile.APPLICATION_ENV}
+    Project: "finopsreport"
+    Subproject: "backend"
+  runtime: nodejs20.x
+  runtime: nodejs20.x
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'ap-south-1'}
   environment:
@@ -10,6 +15,8 @@ provider:
     DATABASE_SECRET_ID: ${self:custom.envfile.DATABASE_SECRET_ID} 
   deploymentBucket:
     name: ${param:PipelineArtifactBucket}
+  layers:
+    - { Ref: LambdaDependenciesLambdaLayer }  
   iam:
     role:
       statements:
@@ -54,19 +61,27 @@ custom:
         - 'X-Amz-Security-Token'
       allowCredentials: true
   
+layers:
+  LambdaDependencies:
+    path: layers/
+    name: finopsreport-${self:custom.envfile.APPLICATION_ENV}-LambdaDependencies
+    description: Lambda dependencies for medlegaldoc app Lambda Functions
+    compatibleRuntimes:
+      - nodejs20.x
+    compatibleArchitectures:
+      - x86_64
+    licenseInfo: GPLv3
+    retain: false
 
 functions:
   LambdaAuthorizer:
     handler: src/authorizer/index.lambda_handler
     name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-lambda-authorizer
     role: lambdaRole
-    layers:
-      - ${self:custom.envfile.LAYER}
     package:
       #artifact: ${self:custom.pkgLocation.buildDir}/${self:provider.stage}-lambda-authorizer.zip
       patterns:
-        - '!src/**'
-        - 'src/authorizer/**'
+        - src/authorizer/**
     environment:
       DOMAIN: ${self:custom.envfile.DOMAIN}
       CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
@@ -78,8 +93,7 @@ functions:
     name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user-signup
     package: 
       patterns:
-        - '!src/**'
-        - 'src/usermangement/signup**'
+        - src/usermangement/signup/**
     environment:
       DOMAIN: ${self:custom.envfile.DOMAIN}
       CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
@@ -103,8 +117,7 @@ functions:
     package: 
       #artifact: ${self:custom.pkgLocation.buildDir}/${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user_login.zip
       patterns:
-        - '!src/**'
-        - 'src/usermangement/login**'
+        - 'src/usermangement/login/**'
     environment:
       DOMAIN: ${self:custom.envfile.DOMAIN}
       CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
@@ -113,8 +126,6 @@ functions:
       TENANT_TABLE: TENANT_MANAGEMENT
       USER_TABLE: USER_MANAGEMENT
     timeout: 30
-    layers:
-      - ${self:custom.envfile.LAYER}
     events:
       - http:
           path: /user/login
@@ -126,8 +137,7 @@ functions:
     name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user-forgot-password
     package:
       patterns:
-        - '!src/**'
-        - 'src/usermangement/forgotPassword**'         
+        - 'src/usermangement/forgotPassword/**'         
     environment:
       DOMAIN: ${self:custom.envfile.DOMAIN}
       CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
@@ -138,8 +148,6 @@ functions:
       FORGET_PASSWORD_TEMPLATE: arn:aws:mobiletargeting:ap-south-1:137036865518:templates/Forget_Password/EMAIL
       SENDER_EMAIL: shanya26@gmail.com
     timeout: 30
-    layers:
-      - ${self:custom.envfile.LAYER}
     events:
       - http:
           path: /user/passwordchange
@@ -150,8 +158,7 @@ functions:
     name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-get-user-profile
     package:
       patterns:
-        - '!src/**'
-        - 'src/usermangement/profile**'
+        - 'src/usermangement/profile/**'
     environment:
       DOMAIN: ${self:custom.envfile.DOMAIN}
       CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
@@ -160,8 +167,6 @@ functions:
       TENANT_TABLE: TENANT_MANAGEMENT
       USER_TABLE: USER_MANAGEMENT
     timeout: 30
-    layers:
-      - ${self:custom.envfile.LAYER}
     events:
       - http:
           path: /user
@@ -183,22 +188,25 @@ functions:
       CLIENT_SECRET: ${self:custom.envfile.CLIENT_SECRET}
       CONNECTION: ${self:custom.envfile.CONNECTION}
     timeout: 30
-    layers:
-      - ${self:custom.envfile.LAYER}
     events:
       - http:
           path: /user/passwordchange/confirm
           method: post
           cors: ${self:custom.cors}
+
 package:
   individually: true
+  excludeDevDependencies: true
   patterns:
-    - '!node_modules/**'
-    - '!*.json'
-    - '!*.md'
-    - '!*.yml'
-    - "!*/**"
-    - src/**
+    - "!src/**"
+    - "!env/**"
+    - "!layers/**"
+    - "!node_modules/**"
+    - "!package-lock.json"
+    - "!package.json"
+    - "!postman/**"
+    - "!README.md"
+    - "!serverless.yml"
 
 resources:
   Resources:
@@ -236,5 +244,8 @@ resources:
    
              
 plugins:
+  - serverless-plugin-log-retention
+  - serverless-offline-lambda
+  - serverless-offline
   - serverless-deployment-bucket
   - serverless-export-env
