@@ -1,5 +1,8 @@
 service: finops-serverless-backend-resources
+
 frameworkVersion: '3'
+configValidationMode: error
+
 provider:
   name: aws
   stackTags:
@@ -45,7 +48,7 @@ provider:
           Resource: "*"
 
 custom:
-  envfile: ${file(./env/dev-env.yml)}
+  envfile: ${file(env/dev-env.yml)}
   pkgLocation: # plugin configuration  
     buildDir: _build
     cleanup: true
@@ -78,7 +81,6 @@ functions:
     name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-lambda-authorizer
     role: lambdaRole
     package:
-      #artifact: ${self:custom.pkgLocation.buildDir}/${self:provider.stage}-lambda-authorizer.zip
       patterns:
         - src/authorizer/**
     environment:
@@ -101,8 +103,6 @@ functions:
       TENANT_TABLE: TENANT_MANAGEMENT
       ROLE_TABLE: ROLE_PERMISSION
       USER_TABLE: USER_MANAGEMENT
-    layers:
-      - ${self:custom.envfile.LAYER}  
     timeout: 30
     events:
       - http:
