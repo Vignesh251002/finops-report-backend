@@ -243,8 +243,5 @@ resources:
    
              
 plugins:
-  - serverless-plugin-log-retention
-  - serverless-offline-lambda
-  - serverless-offline
   - serverless-deployment-bucket
   - serverless-export-env
