@@ -16,6 +16,7 @@ async function sendForgotPasswordCode(email) {
     throw new CustomError("Email is required", { statusCode: 400 });
   }
 
+
   try {
     const command = new ForgotPasswordCommand({
       ClientId: CLIENT_ID,
