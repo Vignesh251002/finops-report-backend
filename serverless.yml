@@ -295,7 +295,7 @@ resources:
         ProviderARNs:
           - !GetAtt CognitoUserPool.Arn                        
          
-plugins:
-  - serverless-plugin-log-retention
-  - serverless-offline-lambda
-  - serverless-offline
+# plugins:
+#   - serverless-plugin-log-retention
+#   - serverless-offline-lambda
+#   - serverless-offline
