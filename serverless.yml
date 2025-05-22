@@ -106,7 +106,7 @@ functions:
       USER_DETAILS_TABLE_NAME: user_details
     package: 
       patterns:
-        - 'src/usermangement/**'
+        - src/usermangement/**
     timeout: 30
     events:
       - http:
@@ -116,10 +116,6 @@ functions:
 
   userVerification:
     handler: src/usermangement/user_verification.handler
-    package: 
-      #artifact: ${self:custom.pkgLocation.buildDir}/${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user_login.zip
-      patterns:
-        - 'src/usermangement/**'
     environment:
       USER_POOL_ID: !Ref CognitoUserPool
       CLIENT_ID: !Ref CognitoUserPoolClient
@@ -129,6 +125,10 @@ functions:
       TENANTS_TABLE_NAME: tenants
       USER_CONTACTS_TABLE_NAME: user_contacts
       USER_DETAILS_TABLE_NAME: user_details
+    package: 
+      #artifact: ${self:custom.pkgLocation.buildDir}/${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user_login.zip
+      patterns:
+        - src/usermangement/**
     timeout: 30
     events:
       - http:
@@ -138,10 +138,6 @@ functions:
 
   userLogin:
     handler: src/usermangement/login.handler
-    package: 
-      #artifact: ${self:custom.pkgLocation.buildDir}/${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user_login.zip
-      patterns:
-        - 'src/usermangement/**'
     environment:
       USER_POOL_ID: !Ref CognitoUserPool
       CLIENT_ID: !Ref CognitoUserPoolClient
@@ -151,6 +147,10 @@ functions:
       TENANTS_TABLE_NAME: tenants
       USER_CONTACTS_TABLE_NAME: user_contacts
       USER_DETAILS_TABLE_NAME: user_details
+    package: 
+      #artifact: ${self:custom.pkgLocation.buildDir}/${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user_login.zip
+      patterns:
+        - src/usermangement/**  
     timeout: 30
     events:
       - http:
@@ -160,9 +160,6 @@ functions:
 
   userForgetPassword:
     handler: src/usermanagement/forgot_password.handler
-    package:
-      patterns:
-        - 'src/usermanagement/**'
     environment:
       USER_POOL_ID: !Ref CognitoUserPool
       CLIENT_ID: !Ref CognitoUserPoolClient
@@ -172,6 +169,9 @@ functions:
       TENANTS_TABLE_NAME: tenants
       USER_CONTACTS_TABLE_NAME: user_contacts
       USER_DETAILS_TABLE_NAME: user_details
+    package:
+      patterns:
+        - src/usermanagement/**  
     timeout: 30    
     events:
       - http:
@@ -185,9 +185,6 @@ functions:
 
   resendSignupOtp:
     handler: src/usermanagement/resend_otp_signup.handler
-    package:
-      patterns:
-        - 'src/usermanagement/**'
     environment:
       USER_POOL_ID: !Ref CognitoUserPool
       CLIENT_ID: !Ref CognitoUserPoolClient
@@ -197,6 +194,9 @@ functions:
       TENANTS_TABLE_NAME: tenants
       USER_CONTACTS_TABLE_NAME: user_contacts
       USER_DETAILS_TABLE_NAME: user_details
+    package:
+      patterns:
+        - src/usermanagement/**  
     timeout: 30    
     events:
       - http:
@@ -206,9 +206,6 @@ functions:
 
   resendForgotPasswordOtp:
     handler: src/usermanagement/resend_otp_forgotPassword.handler
-    package:
-      patterns:
-        - 'src/usermanagement/**'
     environment:
       USER_POOL_ID: !Ref CognitoUserPool
       CLIENT_ID: !Ref CognitoUserPoolClient
@@ -218,6 +215,9 @@ functions:
       TENANTS_TABLE_NAME: tenants
       USER_CONTACTS_TABLE_NAME: user_contacts
       USER_DETAILS_TABLE_NAME: user_details
+    package:
+      patterns:
+        - src/usermanagement/**  
     timeout: 30    
     events:
       - http:
