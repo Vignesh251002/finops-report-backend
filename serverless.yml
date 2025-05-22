@@ -114,9 +114,8 @@ functions:
           method: POST
           cors: true
 
-  LoginInUser:
-    handler: src/usermangement/login.handler
-    name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user-login
+  userVerification:
+    handler: src/usermangement/user_verification.handler
     package: 
       #artifact: ${self:custom.pkgLocation.buildDir}/${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user_login.zip
       patterns:
@@ -125,6 +124,33 @@ functions:
       USER_POOL_ID: !Ref CognitoUserPool
       CLIENT_ID: !Ref CognitoUserPoolClient
       DATABASE_SECRET_ID: ${self:custom.envfile.DATABASE_SECRET_ID}
+      USERS_TABLE_NAME: users
+      SCHEMA_NAME: finops_report
+      TENANTs_TABLE_NAME: tenants
+      USER_CONTACTs_TABLE_NAME: user_contact
+      USER_DETAILS_TABLE_NAME: user_details
+    timeout: 30
+    events:
+      - http:
+          path: /user/verify
+          method: POST
+          cors: true
+
+  userLogin:
+    handler: src/usermangement/login.handler
+    package: 
+      #artifact: ${self:custom.pkgLocation.buildDir}/${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user_login.zip
+      patterns:
+        - 'src/usermangement/**'
+    environment:
+      USER_POOL_ID: !Ref CognitoUserPool
+      CLIENT_ID: !Ref CognitoUserPoolClient
+      DATABASE_SECRET_ID: ${self:custom.envfile.DATABASE_SECRET_ID}
+      USERS_TABLE_NAME: users
+      SCHEMA_NAME: finops_report
+      TENANTs_TABLE_NAME: tenants
+      USER_CONTACTs_TABLE_NAME: user_contact
+      USER_DETAILS_TABLE_NAME: user_details
     timeout: 30
     events:
       - http:

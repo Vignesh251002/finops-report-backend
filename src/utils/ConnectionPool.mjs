@@ -2,7 +2,7 @@ import pg from "pg";
 const { Pool } = pg;
 import { getSecret } from "./commonUtils.mjs";
 import CustomError from './CustomError.mjs';
-const DATABASE_SECRET_ID = process.env.SECRET_ID;
+const DATABASE_SECRET_ID = process.env.DATABASE_SECRET_ID;
 
 /**
  * Represents a connection pool to a database.

@@ -268,14 +268,14 @@ function insertIntoUsers({ user_id, auth_id, tenant_id }) {
   return {
     text: `
       INSERT INTO ${SCHEMA}.${USERS_TABLE_NAME}  
-      (id, auth_id, tenant_id)
+      (id, auth_id, tenant_id,status)
       VALUES ($1, $2, $3);
     `,
-    values: [user_id, auth_id, tenant_id],
+    values: [user_id, auth_id, tenant_id,'UNVERIFIED'],
   };
 }
 
-function insertIntoUserContacts({ user_id,tenant_id, phone_number, email, address }) {
+function insertIntoUserContacts({ user_id,tenant_id, email}) {
   return {
     text: `
       INSERT INTO ${SCHEMA}.${USER_CONTACTS_TABLE_NAME}  
