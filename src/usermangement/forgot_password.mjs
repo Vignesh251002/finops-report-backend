@@ -29,7 +29,7 @@ export const handler = async (event) => {
   try {
  
     let payload = JSON.parse(event.body || "{}");
-    let path = event.path.replace(/^\/dev/, '');
+    let path = event.path.replace(/^\/test/, '');
     payload.path = path
     console.log("Path", path);
  
@@ -63,7 +63,7 @@ async function handleForgotPassword(client, payload) {
   let status_code;
   let response = {};
 
-  if (payload.path === "/user/forget-password") {
+  if (payload.path === "/user/forgot-password") {
     payload_validations(FORGET_PASSWORD_REQUEST, payload);
     await isValidUserToResetPassword(client, payload.email);
 
@@ -78,7 +78,7 @@ async function handleForgotPassword(client, payload) {
     response = { email: payload.email };
   }
 
-  else if (payload.path === "/user/forget-password/confirm") {
+  else if (payload.path === "/user/forgot-password/confirm") {
     payload_validations(FORGET_PASSWORD_REQUEST, payload);
     await isValidUserToResetPassword(client, payload.email);
     console.log("Success fullly executed");
@@ -188,10 +188,10 @@ async function confirmNewPassword(payload) {
  
 function composeGetUserDetails(email) {
   return {
-    text: `SELECT 'clinic' AS type, id, email FROM ${SCHEMA}.${CLINIC_TABLE_NAME} WHERE email = $1
-        UNION ALL
-        SELECT 'user' AS type, id, email FROM ${SCHEMA}.${USER_CONTACTS_TABLE_NAME} WHERE email = $1
-        LIMIT 1`,
+    text: `SELECT *
+    FROM ${SCHEMA}.${USERS_TABLE_NAME}  u
+    JOIN ${SCHEMA}.${USER_CONTACTS_TABLE_NAME}   uc ON u.id = uc.user_id  AND u.tenant_id = uc.tenant_id
+    WHERE uc.email = $1`,
     values: [email]
   };
 }

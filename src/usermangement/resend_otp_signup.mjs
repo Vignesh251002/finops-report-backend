@@ -31,7 +31,7 @@ async function resendSignupOtp(email) {
     if (err.name === "UserNotFoundException") {
       message = "User not found";
     } else if (err.name === "InvalidParameterException") {
-      message = "Invalid parameters provided";
+      message = "User already verified";
     } else if (err.name === "TooManyRequestsException") {
       message = "Too many requests. Please try again later.";
     } else if (err.name === "LimitExceededException") {
