@@ -59,6 +59,8 @@ export const handler = async (event) => {
       throw new CustomError("Email is required", { statusCode: 400 });
     }
 
+
+    
     await sendForgotPasswordCode(payload.email);
 
     message = "Password reset code sent successfully";
