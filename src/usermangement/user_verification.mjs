@@ -1,8 +1,8 @@
 import CustomError from '../utils/CustomError.mjs';
 import { generate_out_put_response } from '../utils/commonUtils.mjs';
-// import { payload_validations } from '../utils/process_validation.mjs';
+import { payload_validations } from '../utils/process_validation.mjs';
 import DatabaseConnectionPool from '../utils/ConnectionPool.mjs';
-// import { USER_VERIFICATION } from './schema_config.mjs';
+import { USER_VERIFICATION } from './schema_config.mjs';
 
 import {
   CognitoIdentityProviderClient,
@@ -33,7 +33,7 @@ export const handler = async (event) => {
       throw new CustomError("Bad Request: No payload", { status_code: 400 });
     }
 
-    // payload_validations(USER_VERIFICATION, payload);
+    payload_validations(USER_VERIFICATION, payload);
 
     const result = await dbPool.transaction(handleUserVerification, payload);
 

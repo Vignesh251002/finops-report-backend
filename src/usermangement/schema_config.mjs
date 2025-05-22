@@ -1,6 +1,5 @@
 import REGEX_PATTERN from "../utils/regex_pattern.mjs";
 
-
 export const LOGIN = {
   properties: {
     email: {
@@ -8,20 +7,32 @@ export const LOGIN = {
       pattern: REGEX_PATTERN.EMAIL_REGEX,
       minLength: 5,
       maxLength: 100,
+      required: true,
+      errorMsg: {
+        type: "Email must be a valid string.",
+        minLength: "Email must be at least 5 characters long.",
+        maxLength: "Email cannot exceed 100 characters.",
+        pattern: "Please provide a valid email address.",
+        required: "Email is required.",
+      },
     },
     password: {
       type: "string",
       pattern: REGEX_PATTERN.PASSWORD_REGEX,
-      // "pattern": "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[@#$%^&+=!])(?=.*[^[0-9a-zA-z]).{8,}$",
       minLength: 8,
       maxLength: 20,
+      required: true,
       errorMsg: {
-        pattern: "Your password must be at least 8 characters long and include both letters and numbers."
-      }
+        type: "Password must be a valid string.",
+        minLength: "Password must be at least 8 characters long.",
+        maxLength: "Password cannot exceed 20 characters.",
+        pattern: "Your password must be at least 8 characters long and include both letters and numbers.",
+        required: "Password is required.",
+      },
     },
   },
-  required: ["email", "password"],
 };
+
 
 export const USER_REGISTRATION = {
   properties: {
@@ -82,9 +93,7 @@ export const USER_REGISTRATION = {
       },
     },
   },
- 
 };
-
 
 
 export const USER_VERIFICATION = {
@@ -92,29 +101,50 @@ export const USER_VERIFICATION = {
     email: {
       type: "string",
       pattern: REGEX_PATTERN.EMAIL_REGEX,
-      // "pattern": "^(\\+91[-\\s]?)?0?([6789]\\d{9})$",
       minLength: 5,
       maxLength: 100,
+      requiered: true,
+      errorMsg: {
+        type: "Email must be a valid string.",
+        minLength: "Email must be at least 5 characters long.",
+        maxLength: "Email cannot exceed 100 characters.",
+        pattern: "Please provide a valid email address.",
+        required: "Email is required.",
+      },
     },
     otp: {
       type: "string",
       pattern: REGEX_PATTERN.SMS_CODE_REGEX,
       minLength: 6,
       maxLength: 6,
+      requiered: true,
+      errorMsg: {
+        type: "OTP must be a string.",
+        minLength: "OTP must be exactly 6 digits.",
+        maxLength: "OTP must be exactly 6 digits.",
+        pattern: "OTP must be a valid 6-digit code.",
+        required: "OTP is required.",
+      },
     },
   },
-  required: ["email", "otp"],
 };
+
 
 export const FORGET_PASSWORD_REQUEST = {
   properties: {
     email: {
       type: "string",
       pattern: REGEX_PATTERN.EMAIL_REGEX,
-      // "pattern": "^(\\+91[-\\s]?)?0?([6789]\\d{9})$",
       minLength: 5,
       maxLength: 100,
+      requiered: true,
+      errorMsg: {
+        type: "Email must be a valid string.",
+        minLength: "Email must be at least 5 characters long.",
+        maxLength: "Email cannot exceed 100 characters.",
+        pattern: "Please provide a valid email address.",
+        required: "Email is required.",
+      },
     },
   },
-  required: ["email"],
 };
