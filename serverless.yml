@@ -217,13 +217,12 @@ functions:
       USER_DETAILS_TABLE_NAME: user_details
     package:
       patterns:
-        - src/usermanagement/**  
-    timeout: 30    
+        - src/usermanagement/**
     events:
       - http:
-          path: user/forgor-password/resend-otp/
+          path: user/forgorpassword/resend_otp/
           method: post
-          cors: true     
+          cors: true    
         
 resources:
   Resources:
