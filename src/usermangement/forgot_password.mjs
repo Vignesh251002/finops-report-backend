@@ -9,6 +9,8 @@ import{  CognitoIdentityProviderClient,
 } from "@aws-sdk/client-cognito-identity-provider";
 import DatabaseConnectionPool from "../utils/ConnectionPool.mjs";
  
+
+
 const dbPool = new DatabaseConnectionPool();
 
 const CLIENT_ID = process.env.CLIENT_ID

@@ -3,8 +3,8 @@ import DatabaseConnectionPool from '../utils/ConnectionPool.mjs'
 import { v4 as uuidv4 } from 'uuid';
 import CustomError from '../utils/CustomError.mjs';
 import { generate_out_put_response } from '../utils/commonUtils.mjs';
-// import { payload_validations } from '../utils/process_validation.mjs';
-// import { USER_REGISTRATION } from './schema_config.mjs';
+import { payload_validations } from '../utils/process_validation.mjs';
+import { USER_REGISTRATION } from './schema_config.mjs';
  
 const cognitoClient = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
 
@@ -41,7 +41,7 @@ export const handler = async (event) => {
       });
     }
      
-    // payload_validations(USER_REGISTRATION, payload)
+    payload_validations(USER_REGISTRATION, payload)
     const result = await dbPool.transaction(handleCreateUser, payload);
     response = result.response;
     message = result.message;
