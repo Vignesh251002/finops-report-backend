@@ -1,0 +1,320 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  'FINOPS CodePipeline Stack'
+
+Parameters:
+  ApplicationPrefix:
+    Type: String
+    Default: finops-backend
+  Environment:
+    Type: String
+    Default: dev
+  SourceCodeProvider:
+    Type: String
+    Default: GitHub
+  GitHubOAuthToken:
+    Description: OAuth token used by AWS CodePipeline to connect to GitHub
+    NoEcho: true
+    Type: String
+    Default: "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" # Replace your GitHubOAuthToken
+  GitHubOwner:
+    Description: GitHub username owning the repo
+    Type: String
+    Default: Meyi-Cloud
+  GitHubRepo:
+    Description: GitHub repo name
+    Type: String
+    Default: meyi-finops-backend
+  GitHubBranch:
+    Description: GitHub repo branch name. It defaults to master if not specified.
+    Type: String
+    Default: development
+  ResourceTemplate:
+    Type: String
+    Default: "template.yaml"
+  PipelineArtifactBucket:
+    Type: String
+    Default: "plant365-devops-resources"
+  Region:
+    Type: String
+    Default: "ap-south-1"
+  SecretsmanagerArn:
+    Type: String
+    Default: "arn:aws:secretsmanager:ap-south-1:137036865518:secret:finops-db-secret-0fTLwL"
+
+Resources:
+
+  #  ____  _            _ _
+  # |  _ \(_)_ __   ___| (_)_ __   ___
+  # | |_) | | '_ \ / _ | | | '_ \ / _ \
+  # |  __/| | |_) |  __| | | | | |  __/
+  # |_|   |_| .__/ \___|_|_|_| |_|\___|
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Sub "${ApplicationPrefix}-${Environment}-pipeline"
+      ArtifactStore:
+        Location: !Sub ${PipelineArtifactBucket}
+        Type: S3
+      RoleArn: !GetAtt CodePipelineExecutionRole.Arn
+      RestartExecutionOnUpdate: true
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceCodeRepo
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Provider: GitHub
+                Version: "1"
+              Configuration:
+                Owner: !Ref GitHubOwner
+                Repo: !Ref GitHubRepo
+                Branch: !Ref GitHubBranch
+                OAuthToken: !Ref GitHubOAuthToken
+                PollForSourceChanges: true
+              OutputArtifacts:
+                - Name: SourceCodeAsZip
+              RunOrder: 1
+        - Name: BuildAndPackage
+          Actions:
+            - Name: CodeBuild
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Ref CodeBuildProjectBuildAndPackage
+              InputArtifacts:
+                - Name: SourceCodeAsZip
+              OutputArtifacts:
+                - Name: BuildArtifactAsZip
+        - Name: Deploy
+          Actions:
+            - Name: Deploy
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Ref CodeBuildProjectDeploy
+              InputArtifacts:
+                - Name: BuildArtifactAsZip
+              RunOrder: 1
+
+  PipelineArtifactsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref PipelineArtifactBucket
+      PolicyDocument:
+        Statement:
+          - Effect: "Deny"
+            Action: "s3:*"
+            Principal: "*"
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${PipelineArtifactBucket}
+              - !Sub arn:${AWS::Partition}:s3:::${PipelineArtifactBucket}/*
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+          - Action:
+              - s3:*
+            Effect: Allow
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${PipelineArtifactBucket}
+              - !Sub arn:${AWS::Partition}:s3:::${PipelineArtifactBucket}/*
+            Principal:
+              AWS:
+                - !GetAtt CodePipelineExecutionRole.Arn
+
+  CodePipelineExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ApplicationPrefix}-${Environment}-CPExecutionRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action:
+              - "sts:AssumeRole"
+            Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+      Policies:
+        - PolicyName: CodePipelineAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "iam:PassRole"
+                Resource: "*"
+        - PolicyName: CodePipelineCodeAndS3Bucket
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - s3:GetBucketAcl
+                  - s3:GetBucketLocation
+                Effect: Allow
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:s3:::${PipelineArtifactBucket}"
+                  - !Sub "arn:${AWS::Partition}:s3:::${PipelineArtifactBucket}/*"
+              - Action:
+                  - "s3:GetObject"
+                  - "s3:GetObjectVersion"
+                  - "s3:PutObject"
+                Effect: Allow
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:s3:::${PipelineArtifactBucket}"
+                  - !Sub "arn:${AWS::Partition}:s3:::${PipelineArtifactBucket}/*"
+        - PolicyName: CodePipelineCodeBuild
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - "codebuild:StartBuild"
+                  - "codebuild:BatchGetBuilds"
+                Effect: Allow
+                Resource:
+                  - !GetAtt CodeBuildProjectBuildAndPackage.Arn
+                  - !GetAtt CodeBuildProjectDeploy.Arn
+
+  #   ____          _      ____        _ _     _
+  #  / ___|___   __| | ___| __ ) _   _(_| | __| |
+  # | |   / _ \ / _` |/ _ |  _ \| | | | | |/ _` |
+  # | |__| (_) | (_| |  __| |_) | |_| | | | (_| |
+  #  \____\___/ \__,_|\___|____/ \__,_|_|_|\__,_|
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ApplicationPrefix}-${Environment}-CodeBuildServiceRole
+      Tags:
+        - Key: Role
+          Value: aws-sam-pipeline-codebuild-service-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action:
+              - "sts:AssumeRole"
+            Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+      Policies:
+        - PolicyName: CodeBuildLogs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
+        - PolicyName: CodeBuildArtifactsBucket
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:*"
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:s3:::${PipelineArtifactBucket}"
+                  - !Sub "arn:${AWS::Partition}:s3:::${PipelineArtifactBucket}/*"
+        - PolicyName: AssumeStagePipExecutionRoles
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - sts:AssumeRole
+                Effect: Allow
+                Resource: "*"
+        - PolicyName: CloudformationAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - cloudformation:* 
+                  - "s3:*"
+                  - "iam:*"
+                  - "lambda:*"
+                  - "apigateway:*"
+                Effect: Allow
+                Resource: "*"
+
+  CodeBuildProjectBuildAndPackage:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:6.0
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: Template
+            Value: !Ref ResourceTemplate
+          - Name: Region
+            Value: !Ref Region
+          - Name: PipelineArtifactBucket
+            Value: !Ref PipelineArtifactBucket
+          - Name: Environment
+            Value: !Ref Environment
+          - Name: StackName
+            Value: !Sub ${ApplicationPrefix}-${Environment}-Resources
+          - Name: SecretsmanagerArn
+            Value: !Ref SecretsmanagerArn
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: devops/buildspec_build_package.yml
+      Name: !Sub "${ApplicationPrefix}-${Environment}-BuildAndPackage"
+      Description: !Sub "BuildAndPackage Project for Repo - ${GitHubRepo}"
+  CodeBuildProjectBuildAndPackageLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/codebuild/${CodeBuildProjectBuildAndPackage}"
+      RetentionInDays: 30
+  CodeBuildProjectDeploy:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:6.0
+        EnvironmentVariables:
+          - Name: PipelineArtifactBucket
+            Value: !Ref PipelineArtifactBucket
+          - Name: Environment
+            Value: !Ref Environment
+          - Name: Template
+            Value: packaged.yaml
+          - Name: Region
+            Value: !Ref Region
+          - Name: StackName
+            Value: !Sub ${ApplicationPrefix}-${Environment}-Resources
+          - Name: SecretsmanagerArn
+            Value: !Ref SecretsmanagerArn
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: devops/buildspec_deploy.yml
+      Name: !Sub "${ApplicationPrefix}-${Environment}-deploy"
+      Description: !Sub "Deploy Project for Repo - ${GitHubRepo}"
+  CodeBuildProjectDeployLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/codebuild/${CodeBuildProjectDeploy}"
+      RetentionInDays: 30
+Outputs:
+  CodeBuildServiceRoleArn:
+    Value: !GetAtt CodeBuildServiceRole.Arn
+  PipelineExecutionRoleArn:
+    Value: !GetAtt CodePipelineExecutionRole.Arn

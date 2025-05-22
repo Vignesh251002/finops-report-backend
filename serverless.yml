@@ -13,9 +13,15 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'ap-south-1'}
   deploymentBucket:
-    name: ${self:custom.envfile.S3_BUCKET}
+    name: ${self:custom.envfile.DEPLOYMENT_BUCKET}
   layers:
-    - { Ref: LambdaDependenciesLambdaLayer }  
+    - { Ref: LambdaDependenciesLambdaLayer } 
+  apiGateway:
+    binaryMediaTypes:
+      - "image/*"
+      - "application/pdf"
+      - "application/msword"
+      - "multipart/form-data"   
   iam:
     role:
       statements:
@@ -45,29 +51,35 @@ provider:
           Resource: "*"
 
 custom:
-  envfile: ${file(env/dev-env.yml)}
-  pkgLocation: # plugin configuration  
-    buildDir: _build
-    cleanup: true
-  cors:
-    methods:
-      - GET
-      - POST
-      - OPTIONS
-    origin: '*'
-    headers:
-      - 'Content-Type'
-      - 'X-Amz-Date'
-      - 'Authorization'
-      - 'X-Api-Key'
-      - 'X-Amz-Security-Token'
-    allowCredentials: true
+  envfile: ${file(./env/${self:provider.stage}-env.yml)}
+  prefix: ${self:custom.envfile.APPLICATION_PREFIX}
+  export-env:
+    enableOffline: true
+  serverless-offline:
+    host: localhost
+    httpPort: 5000
+    lambdaPort: 6000
+  logRetentionInDays: ${self:custom.envfile.DEFAULT_LAMBDA_LOG_RETENTION_IN_DAYS, 90}
+
+package:
+  individually: true
+  excludeDevDependencies: true
+  patterns:
+    - "!src/**"
+    - "!env/**"
+    - "!layers/**"
+    - "!node_modules/**"
+    - "!package-lock.json"
+    - "!package.json"
+    - "!postman/**"
+    - "!README.md"
+    - "!serverless.yml"    
   
 layers:
   LambdaDependencies:
     path: layers/
     name: finopsreport-${self:custom.envfile.APPLICATION_ENV}-LambdaDependencies
-    description: Lambda dependencies for medlegaldoc app Lambda Functions
+    description: Lambda dependencies for finops app Lambda Functions
     compatibleRuntimes:
       - nodejs20.x
     compatibleArchitectures:
@@ -76,39 +88,21 @@ layers:
     retain: false
 
 functions:
-  LambdaAuthorizer:
-    handler: src/authorizer/index.lambda_handler
-    name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-lambda-authorizer
-    role: lambdaRole
-    package:
-      patterns:
-        - src/authorizer/**
-    environment:
-      DOMAIN: ${self:custom.envfile.DOMAIN}
-      CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
-      CLIENT_SECRET: ${self:custom.envfile.CLIENT_SECRET}
-      CONNECTION: ${self:custom.envfile.CONNECTION}
-  
   SignupUser:
     handler: src/usermangement/signup.handler
     name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user-signup
+    environment:
+    USER_POOL_ID: !Ref CognitoUserPool
+    CLIENT_ID: !Ref CognitoUserPoolClient
     package: 
       patterns:
         - src/usermangement/**
-    environment:
-      DOMAIN: ${self:custom.envfile.DOMAIN}
-      CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
-      CLIENT_SECRET: ${self:custom.envfile.CLIENT_SECRET}
-      CONNECTION: ${self:custom.envfile.CONNECTION}
-      TENANT_TABLE: TENANT_MANAGEMENT
-      ROLE_TABLE: ROLE_PERMISSION
-      USER_TABLE: USER_MANAGEMENT
     timeout: 30
     events:
       - http:
-          path: /user/signup
+          path: /user/signup/
           method: POST
-          cors: ${self:custom.cors}
+          cors: true
 
   LoginInUser:
     handler: src/usermangement/login.handler
@@ -118,18 +112,14 @@ functions:
       patterns:
         - 'src/usermangement/**'
     environment:
-      DOMAIN: ${self:custom.envfile.DOMAIN}
-      CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
-      CLIENT_SECRET: ${self:custom.envfile.CLIENT_SECRET}
-      CONNECTION: ${self:custom.envfile.CONNECTION}
-      TENANT_TABLE: TENANT_MANAGEMENT
-      USER_TABLE: USER_MANAGEMENT
+    USER_POOL_ID: !Ref CognitoUserPool
+    CLIENT_ID: !Ref CognitoUserPoolClient
     timeout: 30
     events:
       - http:
           path: /user/login
           method: POST
-          cors: ${self:custom.cors}
+          cors: true
 
   ForgotPassword:
     handler: src/usermangement/forgotPassword.handler
@@ -151,7 +141,7 @@ functions:
       - http:
           path: /user/passwordchange
           method: POST
-          cors: ${self:custom.cors}
+          cors: true
 
   UserProfile:
     handler: src/usermangement/profile.handler
@@ -172,9 +162,9 @@ functions:
           path: /user
           method: GET
           authorizer:
-            name: LambdaAuthorizer 
-            resultTtlInSeconds: 0
-          cors: ${self:custom.cors}
+            type: COGNITO_USER_POOLS
+            authorizerId: !Ref ApiGatewayAuthorizer
+          cors: true
 
   ConfirmForgotPassword:
     handler: src/usermangement/confirmForgetPassword.handler
@@ -192,21 +182,7 @@ functions:
       - http:
           path: /user/passwordchange/confirm
           method: POST
-          cors: ${self:custom.cors}
-
-package:
-  individually: true
-  excludeDevDependencies: true
-  patterns:
-    - "!src/**"
-    - "!env/**"
-    - "!layers/**"
-    - "!node_modules/**"
-    - "!package-lock.json"
-    - "!package.json"
-    - "!postman/**"
-    - "!README.md"
-    - "!serverless.yml"
+          cors: true
 
 resources:
   Resources:
@@ -241,8 +217,93 @@ resources:
                         - Ref: 'AWS::Region'
                         - Ref: 'AWS::AccountId'
                         - 'log-group:/aws/lambda/*:*:*'
-   
-             
+
+    CognitoUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: !Sub ${self:custom.prefix}-${self:custom.envfile.APPLICATION_ENV}-UserPool
+        # AliasAttributes:
+        #   - phone_number
+        #   - email
+        AccountRecoverySetting:
+          RecoveryMechanisms:
+            - Name: verified_email
+              Priority: 1
+        AdminCreateUserConfig:
+          AllowAdminCreateUserOnly: false
+        MfaConfiguration: "OFF"
+        AutoVerifiedAttributes:
+          - email
+        UsernameAttributes:
+          - email
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 8
+            RequireLowercase: False
+            RequireNumbers: False
+            RequireSymbols: False
+            RequireUppercase: False
+        Schema:
+          - Name: email
+            AttributeDataType: String
+            Mutable: true
+            Required: true
+          - Name: tenant_id
+            AttributeDataType: String
+            Mutable: true
+            Required: false
+          - Name: user_id
+            AttributeDataType: String
+            Mutable: true
+            Required: false
+          - Name: role
+            AttributeDataType: String
+            Mutable: true
+            Required: false    
+        #   - Name: phone_number
+        #     AttributeDataType: String
+        #     Mutable: true
+        #     Required: false
+        VerificationMessageTemplate:
+          DefaultEmailOption: CONFIRM_WITH_CODE
+          EmailMessage: "Your verification code is {####}"
+          EmailSubject: "Your verification code"
+    CognitoUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: !Sub ${self:custom.prefix}-${self:custom.envfile.APPLICATION_ENV}-UserPoolClient
+        UserPoolId: !Ref CognitoUserPool
+        SupportedIdentityProviders:
+          - COGNITO
+        ExplicitAuthFlows:
+          - ALLOW_ADMIN_USER_PASSWORD_AUTH
+          - ALLOW_USER_PASSWORD_AUTH
+          - ALLOW_REFRESH_TOKEN_AUTH
+          - ALLOW_USER_SRP_AUTH
+          - ALLOW_CUSTOM_AUTH
+        GenerateSecret: false
+        IdTokenValidity: 1413 # 23.55 Hours
+        AccessTokenValidity: 30
+        RefreshTokenValidity: 1
+        TokenValidityUnits:
+          AccessToken: "minutes"
+          IdToken: "minutes"
+          RefreshToken: "days"    
+
+    ApiGatewayAuthorizer:
+      DependsOn:
+        - ApiGatewayRestApi
+      Type: AWS::ApiGateway::Authorizer
+      Properties:
+        Name: !Sub ${self:custom.prefix}-${self:custom.envfile.APPLICATION_ENV}-cognito-authorizer
+        IdentitySource: method.request.header.Authorization
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        Type: COGNITO_USER_POOLS
+        ProviderARNs:
+          - !GetAtt CognitoUserPool.Arn                        
+         
 plugins:
-  - serverless-deployment-bucket
-  - serverless-export-env
+  - serverless-plugin-log-retention
+  - serverless-offline-lambda
+  - serverless-offline

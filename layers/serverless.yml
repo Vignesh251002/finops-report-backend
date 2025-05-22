@@ -1,0 +1,14 @@
+service: finops-layers
+frameworkVersion: '3'
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ${opt:region, 'ap-south-1'}
+  deploymentBucket:
+    name: plant365-devops-resources
+layers:
+  finopsLayers:
+    path: finopsLayers
+	
+plugins:
+  - serverless-deployment-bucket

@@ -1,7 +1,6 @@
 import { generateOutputResponse, ErrorHandling, getAuthenticationClient, dbConnection } from "../utils/commonUtils.mjs";
 import { AuthApiError } from "auth0"
-import { DataTypes } from 'sequelize'
-import { getModel } from "../lib/models/Models.mjs";
+import { getModel } from "../../layers/nodejs/utils/models.mjs";
 import { schemaValidation } from "../utils/schemavalidation.mjs";
 import { v4 as uuidv4 } from "uuid";
 
@@ -68,7 +67,7 @@ const signUp = async (payload) => {
 
 async function createUserInDatabase(userData) {
     let sequelize = await dbConnection();
-    const User = getModel("UserModel", sequelize, DataTypes);
+    const User = getModel("UserModel", sequelize);
     if (!User) {
        throw new ErrorHandling("User model not found.", {
            statusCode: 500

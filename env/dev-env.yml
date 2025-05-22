@@ -1,10 +1,6 @@
-DOMAIN: dev-4t0hulfki0bqwb0k.us.auth0.com
-CLIENT_ID: DErvQrYJcLptyITax87uiDcv903txvtG
-CLIENT_SECRET: l3apnOb5pofa6IFZW9gB6pvnK5y2Sg8LZg6eHNHDn_ohreAFDOaON5Dr2qIidyrq
-CONNECTION: Username-Password-Authentication
-MANAGEMENT_DOMAIN_API: https://dev-4t0hulfki0bqwb0k.us.auth0.com/api/v2/
 DB_SCHEMA: finopsdbschema
 APPLICATION_PREFIX: finops-backend
-DATABASE_SECRET_ID: finops-db-secret
+DATABASE_SECRET_ID: finops-dev-db-credentials
 APPLICATION_ENV: dev
-S3_BUCKET: finops-backend-backend
+DEPLOYMENT_BUCKET: finops-backend-backend
+REGION: ap-south-1

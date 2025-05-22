@@ -3,6 +3,11 @@ import {
   GetSecretValueCommand,
 } from "@aws-sdk/client-secrets-manager";
 import { Sequelize } from "sequelize";
+import { AuthenticationClient } from "auth0";
+
+const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN;
+const AUTH0_CLIENT_ID = process.env.CLIENT_ID;
+const AUTH0_CLIENT_SECRET = process.env.CLIENT_SECRET;
 
 const DATABASE_SECRET_ID = process.env.DATABASE_SECRET_ID;
 const REGION = process.env.REGION;
@@ -59,15 +64,13 @@ export class ErrorHandling extends Error {
 export async function dbConnection() {
   try {
     const dbCredentials = JSON.parse(await getSecret(DATABASE_SECRET_ID));
-    const { username, password, dbname, host, engine, schemaName } = dbCredentials
+    const { username, password, dbname, host, engine } = dbCredentials
     const sequelize = new Sequelize({
       "username": username,
       "password": password,
       "database": dbname,
       "host": host,
       "dialect": engine,
-      "schema": schemaName,
-      "searchpath": schemaName,
       "dialectOptions": {
         "multipleStatements": true,
         "connectTimeout": 60000,
@@ -87,7 +90,6 @@ export async function dbConnection() {
     console.error("error on create connection : ", err);
     throw new ErrorHandling("error occurred unable to connect to database.", {
       name: "connectToDatabase",
-      errorCode: ERROR_CODE_CONFIG.DATABASE,
       statusCode: 500
     });
   }
@@ -109,9 +111,18 @@ export async function getSecret(secret_id) {
     console.error('error get SecretId', error);
     throw new ErrorHandling("error occurred unable to get credentials from secret manager.", {
       name: "getSecret",
-      errorCode: ERROR_CODE_CONFIG.GET_SECRET_ID,
       statusCode: 500
     });
   }
   return response.SecretString;
+}
+
+
+export const getAuthenticationClient = () => {
+    const authClient = new AuthenticationClient({
+      domain: AUTH0_DOMAIN,          
+      clientId: AUTH0_CLIENT_ID,     
+      clientSecret: AUTH0_CLIENT_SECRET 
+    });
+return authClient;
 }
