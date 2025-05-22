@@ -119,7 +119,7 @@ functions:
     package: 
       #artifact: ${self:custom.pkgLocation.buildDir}/${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user_login.zip
       patterns:
-        - 'src/usermangement/**''
+        - 'src/usermangement/**'
     environment:
       USER_POOL_ID: !Ref CognitoUserPool
       CLIENT_ID: !Ref CognitoUserPoolClient
