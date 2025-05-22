@@ -146,9 +146,9 @@ functions:
       patterns:
         - src/usermangement/**
     environment:
-    USER_POOL_ID: !Ref CognitoUserPool
-    CLIENT_ID: !Ref CognitoUserPoolClient
-    DATABASE_SECRET_ID: ${self:custom.envfile.DATABASE_SECRET_ID}
+      USER_POOL_ID: !Ref CognitoUserPool
+      CLIENT_ID: !Ref CognitoUserPoolClient
+      DATABASE_SECRET_ID: ${self:custom.envfile.DATABASE_SECRET_ID}
     timeout: 30
     events:
       - http:
