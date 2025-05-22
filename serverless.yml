@@ -150,7 +150,7 @@ functions:
     package: 
       #artifact: ${self:custom.pkgLocation.buildDir}/${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user_login.zip
       patterns:
-        - src/usermangement/** 
+        - src/usermangement/**
     timeout: 30
     events:
       - http:
@@ -171,7 +171,7 @@ functions:
       USER_DETAILS_TABLE_NAME: user_details
     package:
       patterns:
-        - src/usermanagement/**  
+        - src/usermanagement/**
     timeout: 30    
     events:
       - http:
@@ -196,7 +196,7 @@ functions:
       USER_DETAILS_TABLE_NAME: user_details
     package:
       patterns:
-        - src/usermanagement/** 
+        - src/usermanagement/**
     timeout: 30    
     events:
       - http:
