@@ -1,8 +1,8 @@
 import CustomError from '../utils/CustomError.mjs';
 import { generate_out_put_response } from '../utils/commonUtils.mjs';
-import { payload_validations } from '../utils/process_validation.mjs';
+// import { payload_validations } from '../utils/process_validation.mjs';
 import DatabaseConnectionPool from '../utils/ConnectionPool.mjs';
-import { USER_VERIFICATION } from './schema_config.mjs';
+// import { USER_VERIFICATION } from './schema_config.mjs';
 
 import {
   CognitoIdentityProviderClient,
@@ -58,11 +58,11 @@ export const handler = async (event) => {
 async function handleUserVerification(client, payload) {
   const user_status = await getUserStatus(client, payload.email);
 
-  if (user_status === 'verified') {
+  if (user_status === 'VERIFIED') {
     throw new CustomError("user is already verified.", { statusCode: 400 });
   }
 
-  if (user_status === 'unverified') {
+  if (user_status === 'UNVERIFIED') {
     await confirmUserSignUp(payload);
     await changeStatusOfUserVerified(client, payload.email);
 
@@ -131,7 +131,7 @@ async function changeStatusOfUserVerified(client, email) {
 async function getUserStatus(client, email) {
   const query = `SELECT u.status
                 FROM ${SCHEMA}.${USERS_TABLE_NAME}  u
-                JOIN ${SCHEMA}.${USER_CONTACTS_TABLE_NAME}   uc ON u.id = uc.user_id AND u.tenant_id = uc.tenant_id
+                JOIN ${SCHEMA}.${USER_CONTACTS_TABLE_NAME}   uc ON u.id = uc.user_id  AND u.tenant_id = uc.tenant_id
                 WHERE uc.email = $1`;
   const values = [email];
 
@@ -156,10 +156,13 @@ function composeUpdateUserEmailVerifiedQuery(email) {
   const updatedAt = new Date().toISOString();
 
   return {
-    text: `UPDATE ${SCHEMA}.${USERS_TABLE_NAME}
-           SET status = $1, updated_at = $2 
-           WHERE email = $3 
-           RETURNING status;`,
+    text: `UPDATE ${SCHEMA}.${USERS_TABLE_NAME} u
+          SET status = $1,
+              updated_at = $2
+          FROM ${SCHEMA}.${USER_CONTACTS_TABLE_NAME} c
+          WHERE u.id = c.user_id
+            AND c.email = $3
+          RETURNING u.status;`,
     values: ['VERIFIED', updatedAt, email],
   };
 }

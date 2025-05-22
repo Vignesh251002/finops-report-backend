@@ -101,8 +101,8 @@ functions:
       DATABASE_SECRET_ID: ${self:custom.envfile.DATABASE_SECRET_ID}
       USERS_TABLE_NAME: users
       SCHEMA_NAME: finops_report
-      TENANTs_TABLE_NAME: tenants
-      USER_CONTACTs_TABLE_NAME: user_contact
+      TENANTS_TABLE_NAME: tenants
+      USER_CONTACTS_TABLE_NAME: user_contacts
       USER_DETAILS_TABLE_NAME: user_details
     package: 
       patterns:
@@ -126,8 +126,8 @@ functions:
       DATABASE_SECRET_ID: ${self:custom.envfile.DATABASE_SECRET_ID}
       USERS_TABLE_NAME: users
       SCHEMA_NAME: finops_report
-      TENANTs_TABLE_NAME: tenants
-      USER_CONTACTs_TABLE_NAME: user_contact
+      TENANTS_TABLE_NAME: tenants
+      USER_CONTACTS_TABLE_NAME: user_contacts
       USER_DETAILS_TABLE_NAME: user_details
     timeout: 30
     events:
@@ -148,8 +148,8 @@ functions:
       DATABASE_SECRET_ID: ${self:custom.envfile.DATABASE_SECRET_ID}
       USERS_TABLE_NAME: users
       SCHEMA_NAME: finops_report
-      TENANTs_TABLE_NAME: tenants
-      USER_CONTACTs_TABLE_NAME: user_contact
+      TENANTS_TABLE_NAME: tenants
+      USER_CONTACTS_TABLE_NAME: user_contacts
       USER_DETAILS_TABLE_NAME: user_details
     timeout: 30
     events:
@@ -158,60 +158,73 @@ functions:
           method: POST
           cors: true
 
-  ForgotPassword:
-    handler: src/usermangement/forgotPassword.handler
-    name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user-forgot-password
-    package:
-      patterns:
-        - src/usermangement/**     
+  UserForgetPassword:
+    handler: src/usermanagement/forgot_password.handler
     environment:
       USER_POOL_ID: !Ref CognitoUserPool
       CLIENT_ID: !Ref CognitoUserPoolClient
       DATABASE_SECRET_ID: ${self:custom.envfile.DATABASE_SECRET_ID}
-    timeout: 30
-    events:
-      - http:
-          path: /user/passwordchange
-          method: POST
-          cors: true
-
-  UserProfile:
-    handler: src/usermangement/profile.handler
-    name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-get-user-profile
+      USERS_TABLE_NAME: users
+      SCHEMA_NAME: finops_report
+      TENANTS_TABLE_NAME: tenants
+      USER_CONTACTS_TABLE_NAME: user_contacts
+      USER_DETAILS_TABLE_NAME: user_details
     package:
       patterns:
-        - src/usermangement/**
+        - src/usermanagement/**
+    timeout: 30    
+    events:
+      - http:
+          path: user/forget-password/
+          method: post
+          cors: true
+      - http:
+          path: /user/forget-password/confirm/
+          method: post
+          cors: true   
+
+  resendSignupOtp:
+    handler: src/usermanagement/resend_otp_signup.handler
     environment:
       USER_POOL_ID: !Ref CognitoUserPool
       CLIENT_ID: !Ref CognitoUserPoolClient
       DATABASE_SECRET_ID: ${self:custom.envfile.DATABASE_SECRET_ID}
-    timeout: 30
-    events:
-      - http:
-          path: /user
-          method: GET
-          authorizer:
-            type: COGNITO_USER_POOLS
-            authorizerId: !Ref ApiGatewayAuthorizer
-          cors: true
-
-  ConfirmForgotPassword:
-    handler: src/usermangement/confirmForgetPassword.handler
-    name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user-confirm-forgot-password
+      USERS_TABLE_NAME: users
+      SCHEMA_NAME: finops_report
+      TENANTS_TABLE_NAME: tenants
+      USER_CONTACTS_TABLE_NAME: user_contacts
+      USER_DETAILS_TABLE_NAME: user_details
     package:
       patterns:
-        - src/usermangement/**
+        - src/usermanagement/**
+    timeout: 30    
+    events:
+      - http:
+          path: user/signup/resend_otp/
+          method: post
+          cors: true    
+
+  resendForgotPasswordOtp:
+    handler: src/usermanagement/resend_otp_forgotPassword.handler
     environment:
       USER_POOL_ID: !Ref CognitoUserPool
       CLIENT_ID: !Ref CognitoUserPoolClient
       DATABASE_SECRET_ID: ${self:custom.envfile.DATABASE_SECRET_ID}
-    timeout: 30
+      USERS_TABLE_NAME: users
+      SCHEMA_NAME: finops_report
+      TENANTS_TABLE_NAME: tenants
+      USER_CONTACTS_TABLE_NAME: user_contacts
+      USER_DETAILS_TABLE_NAME: user_details
+    package:
+      patterns:
+        - src/usermanagement/**
+    timeout: 30    
     events:
       - http:
-          path: /user/passwordchange/confirm
-          method: POST
-          cors: true
-
+          path: user/forgor-password/resend-otp/
+          method: post
+          cors: true     
+        
 resources:
   Resources:
     lambdaRole:

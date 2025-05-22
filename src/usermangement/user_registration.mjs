@@ -3,8 +3,8 @@ import DatabaseConnectionPool from '../utils/ConnectionPool.mjs'
 import { v4 as uuidv4 } from 'uuid';
 import CustomError from '../utils/CustomError.mjs';
 import { generate_out_put_response } from '../utils/commonUtils.mjs';
-import { payload_validations } from '../utils/process_validation.mjs';
-import { USER_REGISTRATION } from './schema_config.mjs';
+// import { payload_validations } from '../utils/process_validation.mjs';
+// import { USER_REGISTRATION } from './schema_config.mjs';
  
 const cognitoClient = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
 
@@ -41,7 +41,7 @@ export const handler = async (event) => {
       });
     }
      
-    payload_validations(USER_REGISTRATION, payload)
+    // payload_validations(USER_REGISTRATION, payload)
     const result = await dbPool.transaction(handleCreateUser, payload);
     response = result.response;
     message = result.message;
@@ -196,8 +196,11 @@ const createCognitoUser = async ({ tenant_id, user_id, role, email, password }) 
  
 const insertUser = async (client, payload) => {
   try {
-    await client.query(insertIntoTenantsQuery(payload));
-    await client.query(insertIntoUsers(payload));
+    const result= await client.query(insertIntoTenantsQuery(payload));
+    console.log(result);
+    const result1= await client.query(insertIntoUsers(payload));
+    console.log(result1)
+
     await client.query(insertIntoUserDetailsQuery(payload));
     await client.query(insertIntoUserContacts(payload));
   } catch (err) {
@@ -207,7 +210,7 @@ const insertUser = async (client, payload) => {
     let statusCode = 500;
  
     if (err.message.includes("tenants")) {
-      message = "Failed to insert clinic data";
+      message = "Failed to insert tenants data";
     } else if (err.message.includes("users")) {
       message = "Failed to insert user";
     } else if (err.message.includes("user_details")) {
@@ -268,8 +271,8 @@ function insertIntoUsers({ user_id, auth_id, tenant_id }) {
   return {
     text: `
       INSERT INTO ${SCHEMA}.${USERS_TABLE_NAME}  
-      (id, auth_id, tenant_id,status)
-      VALUES ($1, $2, $3);
+      (id, auth_id, tenant_id, status)
+      VALUES ($1, $2, $3, $4);
     `,
     values: [user_id, auth_id, tenant_id,'UNVERIFIED'],
   };
@@ -291,7 +294,7 @@ function insertIntoUserDetailsQuery({ user_id, tenant_id, role , first_name, las
     text: `
       INSERT INTO ${SCHEMA}.${USER_DETAILS_TABLE_NAME}
       (user_id, tenant_id, role, first_name, last_name)
-      VALUES ($1, $2, $3);
+      VALUES ($1, $2, $3, $4, $5);
     `,
     values: [user_id, tenant_id, role, first_name, last_name],
   };
