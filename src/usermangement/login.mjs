@@ -53,6 +53,7 @@ export const handler = async (event) => {
 };
 
 
+
 async function handleUserLogin(client, payload) {
 
   const check_result = await checkStatus(client, payload.email);

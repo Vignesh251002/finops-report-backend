@@ -27,6 +27,8 @@ export const handler = async (event) => {
     const payload = typeof event.body === 'string' ? JSON.parse(event.body) : event.body || {};
     console.log('Received payload:', payload);
  
+
+    
     const user_id = uuidv4();
     const tenant_id = uuidv4();
     const role = 'Admin';

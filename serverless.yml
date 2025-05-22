@@ -159,7 +159,7 @@ functions:
           cors: true
 
   userForgetPassword:
-    handler: src/usermanagement/forgot_password.handler
+    handler: src/usermangement/forgot_password.handler
     environment:
       USER_POOL_ID: !Ref CognitoUserPool
       CLIENT_ID: !Ref CognitoUserPoolClient
@@ -171,7 +171,7 @@ functions:
       USER_DETAILS_TABLE_NAME: user_details
     package:
       patterns:
-        - src/usermanagement/**
+        - src/usermangement/**
     timeout: 30    
     events:
       - http:
@@ -184,7 +184,7 @@ functions:
           cors: true   
 
   resendSignupOtp:
-    handler: src/usermanagement/resend_otp_signup.handler
+    handler: src/usermangement/resend_otp_signup.handler
     environment:
       USER_POOL_ID: !Ref CognitoUserPool
       CLIENT_ID: !Ref CognitoUserPoolClient
@@ -196,7 +196,7 @@ functions:
       USER_DETAILS_TABLE_NAME: user_details
     package:
       patterns:
-        - src/usermanagement/**
+        - src/usermangement/**
     timeout: 30    
     events:
       - http:
@@ -205,7 +205,7 @@ functions:
           cors: true    
 
   resendForgotPasswordOtp:
-    handler: src/usermanagement/resend_otp_forgotPassword.handler
+    handler: src/usermangement/resend_otp_forgotPassword.handler
     environment:
       USER_POOL_ID: !Ref CognitoUserPool
       CLIENT_ID: !Ref CognitoUserPoolClient
@@ -217,7 +217,7 @@ functions:
       USER_DETAILS_TABLE_NAME: user_details
     package:
       patterns:
-        - src/usermanagement/**
+        - src/usermangement/**
     events:
       - http:
           path: user/forgorpassword/resend_otp/
