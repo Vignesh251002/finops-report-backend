@@ -93,19 +93,24 @@ layers:
     retain: false
 
 functions:
-  SignupUser:
-    handler: src/usermangement/signup.handler
-    name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user-signup
+  userRegistration:
+    handler: src/usermangement/user_registration.handler
     environment:
       USER_POOL_ID: !Ref CognitoUserPool
       CLIENT_ID: !Ref CognitoUserPoolClient
+      DATABASE_SECRET_ID: ${self:custom.envfile.DATABASE_SECRET_ID}
+      USERS_TABLE_NAME: users
+      SCHEMA_NAME: finops_report
+      TENANTs_TABLE_NAME: tenants
+      USER_CONTACTs_TABLE_NAME: user_contact
+      USER_DETAILS_TABLE_NAME: user_details
     package: 
       patterns:
         - src/usermangement/**
     timeout: 30
     events:
       - http:
-          path: /user/signup/
+          path: /user/register/
           method: POST
           cors: true
 
