@@ -49,6 +49,11 @@ provider:
             - "mobiletargeting:*"
             - "sqs:SendMessage"
           Resource: "*"
+        - Effect: Allow
+          Action:
+            - "cognito-identity:*"
+            - "cognito-idp:*"
+          Resource: "*"  
 
 custom:
   envfile: ${file(./env/dev-env.yml)}
