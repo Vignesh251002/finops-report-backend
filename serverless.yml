@@ -51,7 +51,7 @@ provider:
           Resource: "*"
 
 custom:
-  envfile: ${file(./env/${self:provider.stage}-env.yml)}
+  envfile: ${file(./env/dev-env.yml)}
   prefix: ${self:custom.envfile.APPLICATION_PREFIX}
   export-env:
     enableOffline: true
@@ -92,8 +92,8 @@ functions:
     handler: src/usermangement/signup.handler
     name: ${self:custom.envfile.APPLICATION_PREFIX}-${self:provider.stage}-user-signup
     environment:
-    USER_POOL_ID: !Ref CognitoUserPool
-    CLIENT_ID: !Ref CognitoUserPoolClient
+      USER_POOL_ID: !Ref CognitoUserPool
+      CLIENT_ID: !Ref CognitoUserPoolClient
     package: 
       patterns:
         - src/usermangement/**
@@ -112,8 +112,9 @@ functions:
       patterns:
         - 'src/usermangement/**'
     environment:
-    USER_POOL_ID: !Ref CognitoUserPool
-    CLIENT_ID: !Ref CognitoUserPoolClient
+      USER_POOL_ID: !Ref CognitoUserPool
+      CLIENT_ID: !Ref CognitoUserPoolClient
+      DATABASE_SECRET_ID: ${self:custom.envfile.DATABASE_SECRET_ID}
     timeout: 30
     events:
       - http:
@@ -128,14 +129,9 @@ functions:
       patterns:
         - src/usermangement/**     
     environment:
-      DOMAIN: ${self:custom.envfile.DOMAIN}
-      CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
-      CLIENT_SECRET: ${self:custom.envfile.CLIENT_SECRET}
-      CONNECTION: ${self:custom.envfile.CONNECTION}
-      TENANT_TABLE: TENANT_MANAGEMENT
-      USER_TABLE: USER_MANAGEMENT
-      FORGET_PASSWORD_TEMPLATE: arn:aws:mobiletargeting:ap-south-1:137036865518:templates/Forget_Password/EMAIL
-      SENDER_EMAIL: shanya26@gmail.com
+      USER_POOL_ID: !Ref CognitoUserPool
+      CLIENT_ID: !Ref CognitoUserPoolClient
+      DATABASE_SECRET_ID: ${self:custom.envfile.DATABASE_SECRET_ID}
     timeout: 30
     events:
       - http:
@@ -150,12 +146,9 @@ functions:
       patterns:
         - src/usermangement/**
     environment:
-      DOMAIN: ${self:custom.envfile.DOMAIN}
-      CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
-      CLIENT_SECRET: ${self:custom.envfile.CLIENT_SECRET}
-      CONNECTION: ${self:custom.envfile.CONNECTION}
-      TENANT_TABLE: TENANT_MANAGEMENT
-      USER_TABLE: USER_MANAGEMENT
+    USER_POOL_ID: !Ref CognitoUserPool
+    CLIENT_ID: !Ref CognitoUserPoolClient
+    DATABASE_SECRET_ID: ${self:custom.envfile.DATABASE_SECRET_ID}
     timeout: 30
     events:
       - http:
@@ -173,10 +166,9 @@ functions:
       patterns:
         - src/usermangement/**
     environment:
-      DOMAIN: ${self:custom.envfile.DOMAIN}
-      CLIENT_ID: ${self:custom.envfile.CLIENT_ID}
-      CLIENT_SECRET: ${self:custom.envfile.CLIENT_SECRET}
-      CONNECTION: ${self:custom.envfile.CONNECTION}
+      USER_POOL_ID: !Ref CognitoUserPool
+      CLIENT_ID: !Ref CognitoUserPoolClient
+      DATABASE_SECRET_ID: ${self:custom.envfile.DATABASE_SECRET_ID}
     timeout: 30
     events:
       - http:
