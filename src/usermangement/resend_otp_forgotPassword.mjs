@@ -12,12 +12,7 @@ const REGION = process.env.REGION;
 const cognitoClient = new CognitoIdentityProviderClient({ region: REGION });
 
 async function sendForgotPasswordCode(email) {
-  if (!email) {
-    throw new CustomError("Email is required", { statusCode: 400 });
-  }
-
-
-  try {
+   try {
     const command = new ForgotPasswordCommand({
       ClientId: CLIENT_ID,
       Username: email,
@@ -47,6 +42,7 @@ async function sendForgotPasswordCode(email) {
   }
 }
 
+
 export const handler = async (event) => {
   let response = {};
   let message = "Failed to send forgot password code";
@@ -59,8 +55,6 @@ export const handler = async (event) => {
       throw new CustomError("Email is required", { statusCode: 400 });
     }
 
-
-    
     await sendForgotPasswordCode(payload.email);
 
     message = "Password reset code sent successfully";
@@ -72,8 +66,14 @@ export const handler = async (event) => {
 
     message = err.message;
     status_code = err.statusCode || 500;
-    response = { error: true };
+    response = err
+    if (err instanceof CustomError) {
+      status_code = err.statusCode;
+      message = err.message;
+      response = err
   }
-
+}
+finally {
   return generate_out_put_response(response, message, status_code);
+}
 };

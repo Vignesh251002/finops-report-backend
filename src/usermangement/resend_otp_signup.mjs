@@ -68,8 +68,14 @@ export const handler = async (event) => {
 
     message = err.message;
     status_code = err.statusCode || 500;
-    response = { error: true };
+    response = err
+    if (err instanceof CustomError) {
+      status_code = err.statusCode;
+      message = err.message;
+      response = err
+    }
   }
-
+  finally{
   return generate_out_put_response(response, message, status_code);
+  }
 };

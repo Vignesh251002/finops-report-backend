@@ -34,7 +34,7 @@ export const handler = async (event) => {
     console.log("Path", path);
  
     if (Object.keys(payload).length === 0) {
-      throw new CustomError("Bad Request: No payload",{});
+      throw new CustomError("Bad Request: No payload",{status_code: 400});
     }
  
     const result = await dbPool.transaction(handleForgotPassword, payload);
@@ -57,7 +57,6 @@ export const handler = async (event) => {
 };
  
 async function handleForgotPassword(client, payload) {
-  console.log("Path::::", payload.path);
 
   let message;
   let status_code;
@@ -182,17 +181,20 @@ async function confirmNewPassword(payload) {
         break;
     }
  
-    throw new CustomError(message, { name: "verify_code", statusCode: status_code });
+    throw new CustomError(message, { 
+      name: "verify_code", 
+      statusCode: status_code 
+    });
   }
 }
  
 function composeGetUserDetails(email) {
   return {
-    text: `SELECT *
-    FROM ${SCHEMA}.${USERS_TABLE_NAME}  u
-    JOIN ${SCHEMA}.${USER_CONTACTS_TABLE_NAME}   uc ON u.id = uc.user_id  AND u.tenant_id = uc.tenant_id
-    WHERE uc.email = $1`,
-    values: [email]
+      text: `SELECT *
+            FROM ${SCHEMA}.${USERS_TABLE_NAME}  u
+            JOIN ${SCHEMA}.${USER_CONTACTS_TABLE_NAME}  uc ON u.id = uc.user_id  AND u.tenant_id = uc.tenant_id
+            WHERE uc.email = $1`,
+      values: [email]
   };
 }
  

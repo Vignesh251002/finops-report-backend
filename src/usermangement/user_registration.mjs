@@ -27,11 +27,9 @@ export const handler = async (event) => {
     const payload = typeof event.body === 'string' ? JSON.parse(event.body) : event.body || {};
     console.log('Received payload:', payload);
  
-
-    
     const user_id = uuidv4();
     const tenant_id = uuidv4();
-    const role = 'Admin';
+    const role = 'Admin'
     payload.user_id = user_id
     payload.tenant_id = tenant_id
     payload.role = role
@@ -52,25 +50,26 @@ export const handler = async (event) => {
   } catch (err) {
     if (err instanceof CustomError) {
       console.error('CustomErrorHandler ', err);
-      status_code = err.statusCode || 400;
+      status_code = err.status_ode || 400;
       message = err.message;
-      response = { name: err.name };
+      response = err;  
     } else {
       console.error('Unhandled Error', err);
       status_code = 500;
-      message = err.message || "Unknown error occurred";
-      response = { name: err.name || "UnknownError" };
+      message = err.message || message;
+      response = err;
     }
-    console.log("err.name", err.name);
   } finally {
     return generate_out_put_response(response, message, status_code);
   }
 };
 
+
 const handleCreateUser = async (client, payload) => {
-  let message = 'User already exists '; // default fallback
+  let message = 'User already exists ';
   let status_code = 400;
   let type 
+  let errorName 
   
   try {
     const userStatus = await checkCognitoUserStatus(payload.email);
@@ -101,26 +100,26 @@ const handleCreateUser = async (client, payload) => {
     if (payload.auth_id) {
       await deleteCognitoUser(payload.email);
     }
-
-    let message = 'Failed to register user';
-    let statusCode = 500;
-    let errorName = err.name || 'HandleCreateUserError';
+    message = err.message || 'An error occurred during user registration';
+    status_code = err.status_code || 500;
+    errorName = err.name || 'HandleCreateUserError';
 
     if (err instanceof CustomError) {
       message = err.message;
-      statusCode = err.statusCode;
+      status_code = err.status_code;
       errorName = err.name;
     }
-
     throw new CustomError(message, {
       name: errorName,
-      statusCode: statusCode,
+      status_code: status_code,
     });
   }
 };
 
 
 async function checkCognitoUserStatus(email) {
+  let message 
+  let status_code = 400;
   try {
     const input = { 
       UserPoolId: USER_POOL_ID, 
@@ -133,12 +132,15 @@ async function checkCognitoUserStatus(email) {
   } 
   catch (err) {
     console.log("Error checking user status:", err);
+    message = err.message
+    status_code = err.status_code  || 500
     if (err.__type === 'UserNotFoundException') {
-      return "NOT_FOUND";
+      message = "User not found";
+      status_code = 400;
     }
-    throw new CustomError("Error checking user status", {
-      name: "UserStatusCheckError",
-      statusCode: 500
+    throw new CustomError(message, {
+      name: "UserStatusCheckException",
+      status_Code: 400
     });
   }
 }
@@ -185,18 +187,20 @@ const createCognitoUser = async ({ tenant_id, user_id, role, email, password }) 
     }
     else if (err instanceof CustomError) {
       message = err.message;
-      status_code = err.statusCode;
+      status_code = err.status_ode;
       errorType = err.name;
     }
     
     throw new CustomError(message, {
-      name: errorType || "SignupError",
-      statusCode: status_code
+      name: errorType || "SignupException",
+      status_code: status_code
     });
   }
 };
  
 const insertUser = async (client, payload) => {
+    let message = "Failed to save user data";
+    let status_code = 500;
   try {
     const result= await client.query(insertIntoTenantsQuery(payload));
     console.log(result);
@@ -207,9 +211,6 @@ const insertUser = async (client, payload) => {
     await client.query(insertIntoUserContacts(payload));
   } catch (err) {
     console.error('[DB] Failed to insert user data:', err);
- 
-    let message = "Failed to save user data";
-    let statusCode = 500;
  
     if (err.message.includes("tenants")) {
       message = "Failed to insert tenants data";
@@ -222,11 +223,10 @@ const insertUser = async (client, payload) => {
     }
     throw new CustomError(message, {
       name: "InsertUserError",
-      statusCode: statusCode,
+      status_code: status_code,
     });
   }
 };
-
 
 async function resendVerificationCode(email) {
   try {
@@ -234,15 +234,14 @@ async function resendVerificationCode(email) {
       ClientId: CLIENT_ID,
       Username: email
     });
-    
     await cognitoClient.send(command);
     console.log("Verification code resent to:", email);
     return true;
   } catch (err) {
     console.error("Failed to resend verification code:", err);
     throw new CustomError("Failed to resend verification code", {
-      name: "ResendCodeError",
-      statusCode: 500
+      name: "ResendConfirmationCodeError",
+      status_code: 500
     });
   }
 }
@@ -257,47 +256,37 @@ const deleteCognitoUser = async (email) => {
 };
  
  
-// SQL Builders
 function insertIntoTenantsQuery({ tenant_id}) {
   return {
     text: `INSERT INTO ${SCHEMA}.${TENANTS_TABLE_NAME}
-      (id)
-      VALUES ($1)
-      RETURNING id;
-    `,
+          (id) VALUES ($1) RETURNING id; `,
     values: [tenant_id],
   };
 }
  
 function insertIntoUsers({ user_id, auth_id, tenant_id }) {
   return {
-    text: `
-      INSERT INTO ${SCHEMA}.${USERS_TABLE_NAME}  
-      (id, auth_id, tenant_id, status)
-      VALUES ($1, $2, $3, $4);
-    `,
+    text: `INSERT INTO ${SCHEMA}.${USERS_TABLE_NAME}  
+          (id, auth_id, tenant_id, status)
+          VALUES ($1, $2, $3, $4);`,
     values: [user_id, auth_id, tenant_id,'UNVERIFIED'],
   };
 }
 
 function insertIntoUserContacts({ user_id,tenant_id, email}) {
   return {
-    text: `
-      INSERT INTO ${SCHEMA}.${USER_CONTACTS_TABLE_NAME}  
-      (user_id, tenant_id, email)
-      VALUES ($1, $2, $3);
-    `,
+    text: `INSERT INTO ${SCHEMA}.${USER_CONTACTS_TABLE_NAME}  
+          (user_id, tenant_id, email)
+          VALUES ($1, $2, $3);`,
     values: [user_id, tenant_id, email],
   };
 }
  
 function insertIntoUserDetailsQuery({ user_id, tenant_id, role , first_name, last_name }) {
   return {
-    text: `
-      INSERT INTO ${SCHEMA}.${USER_DETAILS_TABLE_NAME}
-      (user_id, tenant_id, role, first_name, last_name)
-      VALUES ($1, $2, $3, $4, $5);
-    `,
+    text: `INSERT INTO ${SCHEMA}.${USER_DETAILS_TABLE_NAME}
+          (user_id, tenant_id, role, first_name, last_name)
+          VALUES ($1, $2, $3, $4, $5);`,
     values: [user_id, tenant_id, role, first_name, last_name],
   };
 }

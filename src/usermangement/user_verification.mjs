@@ -129,32 +129,31 @@ async function changeStatusOfUserVerified(client, email) {
 }
 
 async function getUserStatus(client, email) {
-  const query = `SELECT u.status
-                FROM ${SCHEMA}.${USERS_TABLE_NAME}  u
-                JOIN ${SCHEMA}.${USER_CONTACTS_TABLE_NAME}   uc ON u.id = uc.user_id  AND u.tenant_id = uc.tenant_id
-                WHERE uc.email = $1`;
-  const values = [email];
 
   try {
-    const result = await client.query(query, values);
+    const getStatusQuery = getStatus(client, email);
+    const result = await client.query(getStatusQuery);
 
     console.log("Clinic status check result:", result);
 
     if (!result.rows || result.rows.length === 0) {
-      throw new CustomError("Invalid Email or OTP", { statusCode: 404 });
+      throw new CustomError("Invalid Email or OTP", { 
+        statusCode: 400 
+      });
     }
 
     return result.rows[0].status;
 
   } catch (error) {
     console.error("Error while fetching user status:", error);
-    throw new CustomError(error.message, { statusCode: 500 });
+    throw new CustomError(error.message, { 
+      statusCode: 500
+     });
   }
 }
 
 function composeUpdateUserEmailVerifiedQuery(email) {
   const updatedAt = new Date().toISOString();
-
   return {
     text: `UPDATE ${SCHEMA}.${USERS_TABLE_NAME} u
           SET status = $1,
@@ -165,4 +164,15 @@ function composeUpdateUserEmailVerifiedQuery(email) {
           RETURNING u.status;`,
     values: ['VERIFIED', updatedAt, email],
   };
+}
+
+
+const getStatus = async (client, email) => {
+   return {
+    text: `SELECT u.status
+                FROM ${SCHEMA}.${USERS_TABLE_NAME}  u
+                JOIN ${SCHEMA}.${USER_CONTACTS_TABLE_NAME}   uc ON u.id = uc.user_id  AND u.tenant_id = uc.tenant_id
+                WHERE uc.email = $1`,
+    values: [email]
+   }
 }
